@@ -1,0 +1,152 @@
+/* GamePage.module.css */
+.gameContainer {
+  min-height: 100vh;
+  background: radial-gradient(circle at center, #14532d 0%, #064e3b 50%, #020617 100%);
+  color: white;
+  display: grid;
+  grid-template-columns: 280px 1fr 280px;
+  grid-template-rows: 160px 1fr 180px;
+  padding: 24px;
+  gap: 16px;
+  font-family: 'Inter', system-ui, sans-serif;
+  overflow: hidden;
+}
+
+/* 中央戰場 */
+.tableCenter {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.deckWrapper {
+  position: relative;
+  width: 220px;
+  height: 300px;
+  perspective: 1000px;
+}
+
+/* 實體卡牌樣式 */
+.playingCard {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  color: #1e293b;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  user-select: none;
+}
+
+.cardTop { font-size: 1.8rem; font-weight: 800; line-height: 1; }
+.cardSuit { font-size: 5rem; align-self: center; }
+.cardBottom { font-size: 1.8rem; font-weight: 800; align-self: flex-end; transform: rotate(180deg); }
+
+/* 玩家槽位 */
+.playerSlot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+}
+
+.playerTop { grid-column: 2; grid-row: 1; }
+.playerLeft { grid-column: 1; grid-row: 2; }
+.playerRight { grid-column: 3; grid-row: 2; }
+.playerBottom { grid-column: 2; grid-row: 3; }
+
+.avatar {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: #1e293b;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+
+.activeTurn .avatar {
+  border-color: #f59e0b;
+  box-shadow: 0 0 30px rgba(245, 158, 11, 0.4);
+  transform: scale(1.1);
+}
+
+/* 操作按鈕 */
+.controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.slapBtn {
+  background: #ef4444;
+  color: white;
+  padding: 16px 64px;
+  border-radius: 99px;
+  font-size: 1.8rem;
+  font-weight: 900;
+  border: none;
+  cursor: pointer;
+  border-bottom: 8px solid #991b1b;
+  box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
+  transition: all 0.1s;
+}
+
+.slapBtn:active:not(:disabled) {
+  border-bottom: 0px;
+  transform: translateY(8px);
+  box-shadow: none;
+}
+
+.slapBtn:disabled {
+  background: #475569;
+  border-bottom: 0;
+  color: #94a3b8;
+  cursor: not-allowed;
+  transform: translateY(8px);
+}
+
+/* GamePage.module.css */
+
+/* ...保留之前的樣式... */
+
+.handContainer {
+  position: absolute;
+  inset: 0;
+  z-index: 999; /* 手要蓋在所有東西上面 */
+  pointer-events: none; /* 防止手掌圖片擋住點擊事件 */
+}
+
+.slapHand {
+  position: absolute;
+  font-size: 5rem;
+  filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.handLabel {
+  background: rgba(0,0,0,0.8);
+  color: white;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+  margin-top: -10px;
+}
