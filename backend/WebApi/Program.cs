@@ -12,7 +12,8 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(); // api
+builder.Services.AddSignalR(); // instant connection
 
 // 1. get connection string & register DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
