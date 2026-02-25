@@ -1,6 +1,6 @@
 using Application.Services;
+using Domain.Interfaces.Repositories;
 using Domain.Provider;
-using Domain.Repositories;
 using Infrastructure.Persistence;
 using Infrastructure.Provider;
 using Infrastructure.Repositories;

@@ -1,7 +1,7 @@
 ﻿using Application.DTOs;
 using Domain.Entities;
+using Domain.Interfaces.Repositories;
 using Domain.Provider;
-using Domain.Repositories;
 using Infrastructure.Persistence;
 using Infrastructure.Provider;
 using System.Text.Json;

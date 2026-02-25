@@ -1,5 +1,5 @@
 ﻿using Application.DTOs;
-using Domain.Repositories;
+using Domain.Interfaces.Repositories;
 using Infrastructure.Persistence;
 
 namespace Application.Services;
