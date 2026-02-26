@@ -13,7 +13,7 @@ namespace Domain.Entities
             get; set;
         }
 
-        public List<string> PLayerIds { get; set; } = new();
+        public List<string> PlayerIds { get; set; } = new();
 
         public bool IsStarted { get; set; }
     }

@@ -1,6 +1,6 @@
 using Application.Services;
+using Domain.Interfaces.Proivider;
 using Domain.Interfaces.Repositories;
-using Domain.Provider;
 using Infrastructure.Persistence;
 using Infrastructure.Provider;
 using Infrastructure.Repositories;
@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using StackExchange.Redis;
+using WebAPi.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +29,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IShapeRepository, ShapeRepository>();
+builder.Services.AddScoped<IGameRepository, GameRepository>();
 
 // register Provider
 builder.Services.AddScoped<IJwtProvider, JwtProvider>();
@@ -36,6 +38,7 @@ builder.Services.AddScoped<IJwtProvider, JwtProvider>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ShapeService>();
+builder.Services.AddScoped<GameService>();
 
 // connect to Redis
 var redisConnectionString = builder.Configuration.GetSection("Redis:ConnectionString").Value;
@@ -112,5 +115,12 @@ app.MapGet("/test-redis", async (IConnectionMultiplexer redis) =>
 });
 
 app.UseCors("AllowLocalhost");
+
+// ensure auth/authorization middleware runs
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllers();
+app.MapHub<GameHub>("/gameHub"); // Map SignalR hubs
+
 app.Run();

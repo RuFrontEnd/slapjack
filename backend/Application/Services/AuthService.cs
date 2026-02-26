@@ -1,14 +1,11 @@
 ﻿using Application.DTOs;
 using Domain.Entities;
+using Domain.Interfaces.Proivider;
 using Domain.Interfaces.Repositories;
-using Domain.Provider;
-using Infrastructure.Persistence;
-using Infrastructure.Provider;
-using Microsoft.EntityFrameworkCore;
 
 namespace Application.Services;
 
-public class AuthService(ApplicationDbContext dbContext, IAuthRepository authRepository, IJwtProvider jwtProvider)
+public class AuthService(IAuthRepository authRepository, IJwtProvider jwtProvider)
 {
     public async Task<UserDto> RegisterUserAsync(string email, string password)
     {

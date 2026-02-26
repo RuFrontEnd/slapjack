@@ -1,12 +1,14 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using Application.Services;
+using Microsoft.AspNetCore.SignalR;
 namespace WebAPi.Hubs;
 
-public class GameHub : Hub
+public class GameHub(GameService gameService) : Hub
 {
     //private readonly MatchmakingService _matchmaking;
     public async Task StartMatching(string playerName)
     {
-        //await _matchService.AddPlayerToQueue(Context.ConnectionId, playerName);
+        Console.WriteLine(playerName);
+        await gameService.AddPlayerToQueue(Context.ConnectionId, playerName);
     }
 };
 

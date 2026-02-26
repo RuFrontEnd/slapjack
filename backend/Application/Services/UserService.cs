@@ -1,10 +1,9 @@
 ﻿using Application.DTOs;
 using Domain.Interfaces.Repositories;
-using Infrastructure.Persistence;
 
 namespace Application.Services;
 
-public class UserService(ApplicationDbContext context, IUserRepository userRepository)
+public class UserService(IUserRepository userRepository)
 {
     public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
     {

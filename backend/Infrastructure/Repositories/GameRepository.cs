@@ -1,16 +1,24 @@
 ﻿using Domain.Interfaces.Repositories;
 using Infrastructure.Persistence;
 using StackExchange.Redis;
+using System.Text.Json;
 
 namespace Infrastructure.Repositories
 {
-    public class GameRepository : IGameRepository
+    public class GameRepository(ApplicationDbContext context, IConnectionMultiplexer redis) : IGameRepository
     {
-        private readonly IDatabase _db;
-        private const string RoomListKey = "active_rooms";
+        private readonly IDatabase redisDB = redis.GetDatabase();
+        private const string MatchmakingQueueKey = "match_queue";
 
-        // constructor
-        public GameRepository(ApplicationDbContext context, IConnectionMultiplexer redis) => _db = redis.GetDatabase();
+        // constructor removed because primary-constructor parameters are used above
+
+        public async Task EnqueuePlayerAsync(string connectionId, string playerName)
+        {
+            // 將玩家資訊序列化後存入 List 尾端
+            var playerInfo = JsonSerializer.Serialize(new { connectionId, playerName });
+            Console.WriteLine(playerInfo);
+            await redisDB.ListRightPushAsync(MatchmakingQueueKey, playerInfo);
+        }
 
         public async Task<string> GetAvailableRoomAsync()
         {

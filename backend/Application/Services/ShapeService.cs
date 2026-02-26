@@ -1,14 +1,10 @@
 ﻿using Application.DTOs;
 using Domain.Entities;
 using Domain.Interfaces.Repositories;
-using Domain.Provider;
-using Infrastructure.Persistence;
-using Infrastructure.Provider;
-using System.Text.Json;
 
 namespace Application.Services;
 
-public class ShapeService(ApplicationDbContext dbContext, IShapeRepository shapeRepository)
+public class ShapeService(IShapeRepository shapeRepository)
 {
     public async Task<bool> UpsertAsync(Guid userId, List<ShapeInfoDTO> infos)
     {

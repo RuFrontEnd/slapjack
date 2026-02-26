@@ -1,5 +1,5 @@
 ﻿using Domain.Entities;
-using Domain.Provider;
+using Domain.Interfaces.Proivider;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
