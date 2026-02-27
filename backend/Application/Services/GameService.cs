@@ -1,6 +1,7 @@
-﻿using Domain.Interfaces.Services;
-using Domain.Interfaces.Repositories;
+﻿using Domain.Interfaces.Repositories;
+using Domain.Interfaces.Services;
 using Microsoft.AspNetCore.SignalR;
+using System.Xml.Linq;
 namespace Application.Services;
 
 public class GameService(IGameRepository gameRepository, IHubContext<Hub<IGameService>> hubContext)
@@ -9,6 +10,12 @@ public class GameService(IGameRepository gameRepository, IHubContext<Hub<IGameSe
     {
         await gameRepository.EnqueuePlayerAsync(connId, name);
     }
+
+    //public async Task RemovePlayerFromQueue(string connId)
+    //{
+    //    await gameRepository.DequeuePlayerAsync(connId);
+    //}
+
     public async Task<string> JoinOrCreateRoomAsync(string connectionId, string playerName)
     {
         // 1. 找空房

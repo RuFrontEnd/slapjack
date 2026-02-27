@@ -1,23 +1,44 @@
-﻿using Domain.Interfaces.Repositories;
+﻿using Domain.Entities;
+using Domain.Interfaces.Repositories;
 using Infrastructure.Persistence;
 using StackExchange.Redis;
+using System.Numerics;
 using System.Text.Json;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Infrastructure.Repositories
 {
     public class GameRepository(ApplicationDbContext context, IConnectionMultiplexer redis) : IGameRepository
     {
         private readonly IDatabase redisDB = redis.GetDatabase();
-        private const string MatchmakingQueueKey = "match_queue";
+        private const string MatchingMapKey = "matching_map";
+        private const string MatchingQueueKey = "matching_queue";
 
-        // constructor removed because primary-constructor parameters are used above
-
-        public async Task EnqueuePlayerAsync(string connectionId, string playerName)
+        public async Task<bool> EnqueuePlayerAsync(string connId, string name)
         {
-            // 將玩家資訊序列化後存入 List 尾端
-            var playerInfo = JsonSerializer.Serialize(new { connectionId, playerName });
-            Console.WriteLine(playerInfo);
-            await redisDB.ListRightPushAsync(MatchmakingQueueKey, playerInfo);
+            var player = new PlayerEntity(connId, name);
+            var tran = redisDB.CreateTransaction();
+
+            tran.AddCondition(Condition.HashNotExists(MatchingMapKey, connId));
+
+            _ = tran.ListRightPushAsync(MatchingQueueKey, JsonSerializer.Serialize(player));
+            _ = tran.HashSetAsync(MatchingMapKey, player.ConnectionId, player.Name);
+
+            return await tran.ExecuteAsync();
+        }
+
+        public async Task DequeuePlayerAsync(string connId)
+        {
+            var playerJson = await redisDB.HashGetAsync(MatchingMapKey, connId);
+
+            if (playerJson.IsNull) return;
+
+            var tran = redisDB.CreateTransaction();
+
+            _ = tran.ListRemoveAsync(MatchingQueueKey, playerJson);
+            _ = tran.HashDeleteAsync(MatchingMapKey, connId);
+
+            await tran.ExecuteAsync();
         }
 
         public async Task<string> GetAvailableRoomAsync()

@@ -2,7 +2,7 @@
 {
     public interface IGameRepository
     {
-        Task EnqueuePlayerAsync(string connId, string name);
+        Task<bool> EnqueuePlayerAsync(string connId, string name);
         Task<string> GetAvailableRoomAsync();
         Task<string> CreateRoomAsync(string roomCode);
         Task AddPlayerToRoomAsync(string roomCode, string connectionId, string player);
