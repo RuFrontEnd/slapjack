@@ -17,28 +17,29 @@ namespace Infrastructure.Repositories
         public async Task<bool> EnqueuePlayerAsync(string connId, string name)
         {
             var player = new PlayerEntity(connId, name);
+            var playerJson = JsonSerializer.Serialize(player);
             var tran = redisDB.CreateTransaction();
 
             tran.AddCondition(Condition.HashNotExists(MatchingMapKey, connId));
 
-            _ = tran.ListRightPushAsync(MatchingQueueKey, JsonSerializer.Serialize(player));
-            _ = tran.HashSetAsync(MatchingMapKey, player.ConnectionId, player.Name);
+            _ = tran.ListRightPushAsync(MatchingQueueKey, playerJson);
+            _ = tran.HashSetAsync(MatchingMapKey, player.ConnectionId, playerJson);
 
             return await tran.ExecuteAsync();
         }
 
-        public async Task DequeuePlayerAsync(string connId)
+        public async Task<bool> DequeuePlayerAsync(string connId)
         {
             var playerJson = await redisDB.HashGetAsync(MatchingMapKey, connId);
 
-            if (playerJson.IsNull) return;
+            if (playerJson.IsNull) return true;
 
             var tran = redisDB.CreateTransaction();
 
             _ = tran.ListRemoveAsync(MatchingQueueKey, playerJson);
             _ = tran.HashDeleteAsync(MatchingMapKey, connId);
 
-            await tran.ExecuteAsync();
+            return await tran.ExecuteAsync();
         }
 
         public async Task<string> GetAvailableRoomAsync()

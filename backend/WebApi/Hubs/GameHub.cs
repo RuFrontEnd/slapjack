@@ -11,15 +11,12 @@ public class GameHub(GameService gameService) : Hub
         await gameService.AddPlayerToQueue(Context.ConnectionId, playerName);
     }
 
-    //public override async Task OnDisconnectedAsync(Exception? exception)
-    //{
-    //    // 這裡的 Context.ConnectionId 就是斷掉的那個人
-    //    Console.WriteLine($"diconnect id: {Context.ConnectionId}");
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        // 呼叫你的 Service 把他從 Redis 隊列中踢掉，避免配對到空殼
+        await gameService.RemovePlayerFromQueue(Context.ConnectionId);
 
-    //    // 呼叫你的 Service 把他從 Redis 隊列中踢掉，避免配對到空殼
-    //    await gameService.RemovePlayerFromQueue(Context.ConnectionId);
-
-    //    await base.OnDisconnectedAsync(exception);
-    //}
+        await base.OnDisconnectedAsync(exception);
+    }
 };
 
