@@ -34,8 +34,12 @@ public class MatchmakingWorker(IServiceProvider serviceProvider, ILogger<Matchma
                             var matchedPlayers = await gameRepository.PopMatchGroupAsync(4);
 
                             if (matchedPlayers.Count == 4)
-
+                            {
                                 await gameRepository.CreateRoomAsync(matchedPlayers);
+                            }
+
+
+
 
                             // 這裡發送通知給玩家 (SignalR)
                         }
