@@ -1,4 +1,5 @@
 using Application.Services;
+using Application.Workers;
 using Domain.Interfaces.Proivider;
 using Domain.Interfaces.Repositories;
 using Infrastructure.Persistence;
@@ -39,6 +40,9 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ShapeService>();
 builder.Services.AddScoped<GameService>();
+
+// register background service
+builder.Services.AddHostedService<MatchmakingWorker>();
 
 // connect to Redis
 var redisConnectionString = builder.Configuration.GetSection("Redis:ConnectionString").Value;
