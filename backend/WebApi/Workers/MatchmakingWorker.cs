@@ -1,12 +1,10 @@
 ﻿using Domain.Interfaces.Repositories;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.DependencyInjection;
+using WebAPi.Hubs;
 
 namespace Application.Workers;
 
-public class MatchmakingWorker(IServiceProvider serviceProvider, ILogger<MatchmakingWorker> logger) : BackgroundService
+public class MatchmakingWorker(IServiceProvider serviceProvider, ILogger<MatchmakingWorker> logger, IHubContext<GameHub> hubContext) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -35,13 +33,17 @@ public class MatchmakingWorker(IServiceProvider serviceProvider, ILogger<Matchma
 
                             if (matchedPlayers.Count == 4)
                             {
-                                await gameRepository.CreateRoomAsync(matchedPlayers);
+                                var roomId = await gameRepository.CreateRoomAsync(matchedPlayers);
+
+                                var connectionIds = matchedPlayers.Select(matchedPlayer => matchedPlayer.ConnectionId);
+                                var playerNames = matchedPlayers.Select(matchedPlayer => matchedPlayer.Name);
+
+                                await hubContext.Clients.Clients(connectionIds).SendAsync("ReceiveMatchResult", new
+                                {
+                                    RoomId = roomId,
+                                    Players = playerNames
+                                });
                             }
-
-
-
-
-                            // 這裡發送通知給玩家 (SignalR)
                         }
                     }
 

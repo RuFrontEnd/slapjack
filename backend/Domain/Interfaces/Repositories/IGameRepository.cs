@@ -8,7 +8,7 @@ namespace Domain.Interfaces.Repositories
         Task<bool> DequeuePlayerAsync(string connId);
         Task<long> GetQueueLengthAsync();
         Task<List<PlayerEntity>> PopMatchGroupAsync(int count);
-        Task CreateRoomAsync(List<PlayerEntity> players);
+        Task<string> CreateRoomAsync(List<PlayerEntity> players);
     }
 
 }

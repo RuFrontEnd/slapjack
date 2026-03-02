@@ -82,7 +82,7 @@ namespace Infrastructure.Repositories
             return matchedPlayers;
         }
 
-        public async Task CreateRoomAsync(List<PlayerEntity> players)
+        public async Task<string> CreateRoomAsync(List<PlayerEntity> players)
         {
             string roomId = Guid.NewGuid().ToString();
 
@@ -95,6 +95,8 @@ namespace Infrastructure.Repositories
                 new HashEntry("status", "waiting"),
                 new HashEntry("createdAt", DateTime.UtcNow.ToString("O"))
             });
+
+            return roomKey;
         }
     }
 

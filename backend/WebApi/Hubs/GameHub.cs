@@ -15,6 +15,8 @@ public class GameHub(GameService gameService, ILogger<GameHub> logger) : Hub
         // 呼叫你的 Service 把他從 Redis 隊列中踢掉，避免配對到空殼
         await gameService.RemovePlayerFromQueue(Context.ConnectionId);
 
+        // TODO: close room
+
         await base.OnDisconnectedAsync(exception);
     }
 };
