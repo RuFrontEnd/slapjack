@@ -9,6 +9,7 @@ namespace Domain.Interfaces.Repositories
         Task<long> GetMatchingQueueLengthAsync();
         Task<List<PlayerEntity>> PopMatchGroupAsync(int count);
         Task<string> CreateRoomAsync(List<PlayerEntity> players);
+        Task<bool> DeleteRoomAsync(string connId);
     }
 
 }

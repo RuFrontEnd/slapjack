@@ -15,5 +15,10 @@ public class GameService(IGameRepository gameRepository, IHubContext<Hub<IGameSe
     {
         await gameRepository.DequeuePlayerAsync(connId);
     }
+
+    public async Task CloseRoomAsync(string connId)
+    {
+        await gameRepository.DeleteRoomAsync(connId);
+    }
 };
 

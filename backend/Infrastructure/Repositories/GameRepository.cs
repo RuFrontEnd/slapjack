@@ -98,14 +98,37 @@ namespace Infrastructure.Repositories
                 new HashEntry("createdAt", DateTime.UtcNow.ToString("O"))
             });
 
-            for(int i = 0; i < players.Count; i++)
+            for (int i = 0; i < players.Count; i++)
             {
                 await redisDB.HashSetAsync(RoomPlayerMapKey, new HashEntry[] {
-                    new HashEntry(players[i].Name, roomId),
+                    new HashEntry(players[i].ConnectionId, roomId),
                 });
             }
 
             return roomKey;
+        }
+
+        public async Task<bool> DeleteRoomAsync(string connId)
+        {
+            string? roomId = await redisDB.HashGetAsync(RoomPlayerMapKey, connId);
+            string roomKey = $"room:{roomId}";
+
+            string? roomPlayersJson = await redisDB.HashGetAsync(roomKey, "players");
+
+            if (roomPlayersJson == null) return false;
+
+            var roomPlayers = JsonSerializer.Deserialize<List<PlayerEntity>>(roomPlayersJson!);
+
+            if (roomPlayers == null) return false;
+
+            await redisDB.KeyDeleteAsync(roomKey);
+
+            for (int i = 0; i < roomPlayers.Count; i++)
+            {
+                await redisDB.HashDeleteAsync(RoomPlayerMapKey, roomPlayers[i].ConnectionId);
+            }
+
+            return true;
         }
     }
 

@@ -12,12 +12,14 @@ public class GameHub(GameService gameService, ILogger<GameHub> logger) : Hub
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
+        Console.WriteLine('A');
         // 呼叫你的 Service 把他從 Redis 隊列中踢掉，避免配對到空殼
         await gameService.RemovePlayerFromQueue(Context.ConnectionId);
 
         // TODO: close room
 
-        //await gameService.closeRoomAsync()
+
+        await gameService.CloseRoomAsync(Context.ConnectionId);
 
         await base.OnDisconnectedAsync(exception);
     }
