@@ -1,66 +1,23 @@
-﻿using Microsoft.AspNetCore.SignalR.Client;
+﻿// 1. turn on termainal
+// 2. cd Slapjack_stress_test
+// 3. input following command:
+// dotnet run -- createOneRoom
+// dotnet run -- createMatchingQueue
+
 using NBomber.CSharp;
-using NBomber.Contracts;
-using System.Net.Http; // 記得加上這一行
+// 確保你有 using 你的 Scenarios 命名空間
+using LoadTesting.Scenarios;
 
-// 1. 定義一個簡單的玩家客戶端
-var scenario = Scenario.Create("create 1 room", async context =>
+var scenarioType = args.Length > 0 ? args[0] : "match";
+
+var scenarios = scenarioType switch
 {
-    // 為了模擬真實性，我們可以從 Step 的 context 取得 logger
-    var logger = context.Logger;
+    "createOneRoom" => new[] { CreateOneRoom.GetScenario() }, // 對應上面定義的類別與方法
+    "createMatchingQueue" => new[] { CreateMatchingQueue.GetScenario() },
+    //"all" => new[] { CreateOneRoom.GetScenario(), DisconnectTest.GetScenario() },
+    _ => throw new Exception("未知的情境")
+};
 
-    // A. 建立連線 (此部分通常在 Init 階段做更好，但這裡先示範單一 Step 流程)
-    var connection = new HubConnectionBuilder()
-        .WithUrl("http://localhost:5000/gameHub", options =>
-        {
-            // 核心修正：加入此 Callback 來忽略憑證錯誤
-            options.HttpMessageHandlerFactory = (handler) =>
-            {
-                if (handler is HttpClientHandler clientHandler)
-                {
-                    clientHandler.ServerCertificateCustomValidationCallback =
-                        HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-                }
-                return handler;
-            };
-        })
-        .Build();
-
-    try
-    {
-        // B. 紀錄連線動作
-        var connectPart = await Step.Run("connect", context, async () =>
-        {
-            await connection.StartAsync();
-            return Response.Ok();
-        });
-
-        // C. 紀錄發起配對動作
-        var matchPart = await Step.Run("start_matching", context, async () =>
-        {
-            // 呼叫你的 Hub 方法
-            await connection.InvokeAsync("StartMatching", $"User_{context.InvocationNumber}");
-            return Response.Ok();
-        });
-
-        // D. 模擬玩家在線等待一段時間 (例如等待 5 秒看會不會收到結果)
-        await Task.Delay(5000);
-
-        await connection.StopAsync();
-        return Response.Ok();
-    }
-    catch (Exception ex)
-    {
-        return Response.Fail(message: ex.Message);
-    }
-})
-.WithLoadSimulations(
-    // 在 0 秒時，一次性注入 4 個模擬用戶
-    // 這 4 個用戶只會執行一次該 Scenario，執行完就結束
-    Simulation.Inject(rate: 4, interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(1))
-);
-
-// 3. 啟動 NBomber
 NBomberRunner
-    .RegisterScenarios(scenario)
+    .RegisterScenarios(scenarios)
     .Run();

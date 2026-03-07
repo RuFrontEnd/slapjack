@@ -12,9 +12,11 @@ namespace Infrastructure.Repositories
     public class GameRepository(ApplicationDbContext context, IConnectionMultiplexer redis, ILogger<GameRepository> logger) : IGameRepository
     {
         private readonly IDatabase redisDB = redis.GetDatabase();
-        private const string MatchingMapKey = "matching_map";
-        private const string MatchingQueueKey = "matching_queue";
-        private const string RoomPlayerMap = "room_plater_map";
+        private const string MatchingKey = "matching";
+        private const string MatchingMapKey = $"{MatchingKey}:matching_map";
+        private const string MatchingQueueKey = $"{MatchingKey}:matching_queue";
+        private const string RoomKey = "room";
+        private const string RoomPlayerMapKey = $"{RoomKey}:room_player_map";
 
         public async Task<bool> EnqueuePlayerAsync(string connId, string name)
         {
@@ -98,7 +100,7 @@ namespace Infrastructure.Repositories
 
             for(int i = 0; i < players.Count; i++)
             {
-                await redisDB.HashSetAsync($"room:{RoomPlayerMap}", new HashEntry[] {
+                await redisDB.HashSetAsync(RoomPlayerMapKey, new HashEntry[] {
                     new HashEntry(players[i].Name, roomId),
                 });
             }
