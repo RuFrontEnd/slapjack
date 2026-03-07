@@ -4,7 +4,7 @@ using NBomber.Contracts;
 using System.Net.Http; // 記得加上這一行
 
 // 1. 定義一個簡單的玩家客戶端
-var scenario = Scenario.Create("matchmaking_scenario", async context =>
+var scenario = Scenario.Create("create 1 room", async context =>
 {
     // 為了模擬真實性，我們可以從 Step 的 context 取得 logger
     var logger = context.Logger;
@@ -55,7 +55,9 @@ var scenario = Scenario.Create("matchmaking_scenario", async context =>
     }
 })
 .WithLoadSimulations(
-    Simulation.KeepConstant(copies: 100, during: TimeSpan.FromSeconds(30))
+    // 在 0 秒時，一次性注入 4 個模擬用戶
+    // 這 4 個用戶只會執行一次該 Scenario，執行完就結束
+    Simulation.Inject(rate: 4, interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(1))
 );
 
 // 3. 啟動 NBomber
