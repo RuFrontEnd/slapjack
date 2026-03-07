@@ -17,6 +17,8 @@ public class GameHub(GameService gameService, ILogger<GameHub> logger) : Hub
 
         // TODO: close room
 
+        //await gameService.closeRoomAsync()
+
         await base.OnDisconnectedAsync(exception);
     }
 };

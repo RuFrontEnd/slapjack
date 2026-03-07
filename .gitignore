@@ -1,6 +1,17 @@
 /node_modules
 .env
 .vs
+.vscode/
+*.user
+*.suo
 
 /backend/**/[Bb]in/
 /backend/**/[Oo]bj/
+
+/stress_test/**/bin/
+/stress_test/**/obj/
+/stress_test/**/reports/
+/stress_test/**/*.html
+/stress_test/**/*.csv
+/stress_test/**/*.json
+/stress_test/**/*.log

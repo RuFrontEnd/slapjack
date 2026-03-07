@@ -6,7 +6,7 @@ namespace Domain.Interfaces.Repositories
     {
         Task<bool> EnqueuePlayerAsync(string connId, string name);
         Task<bool> DequeuePlayerAsync(string connId);
-        Task<long> GetQueueLengthAsync();
+        Task<long> GetMatchingQueueLengthAsync();
         Task<List<PlayerEntity>> PopMatchGroupAsync(int count);
         Task<string> CreateRoomAsync(List<PlayerEntity> players);
     }

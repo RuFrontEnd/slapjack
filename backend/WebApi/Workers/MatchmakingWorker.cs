@@ -17,7 +17,7 @@ public class MatchmakingWorker(IServiceProvider serviceProvider, ILogger<Matchma
                     var gameRepository = scope.ServiceProvider.GetRequiredService<IGameRepository>();
 
                     // 1. 先看總共有多少人在排隊
-                    long totalWaiting = await gameRepository.GetQueueLengthAsync();
+                    long totalWaiting = await gameRepository.GetMatchingQueueLengthAsync();
 
                     // 2. 計算可以組成幾組 (例如 100 人可以組成 25 組)
                     int groupsToCreate = (int)(totalWaiting / 4);

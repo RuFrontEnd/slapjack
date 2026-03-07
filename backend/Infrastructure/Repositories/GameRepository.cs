@@ -14,7 +14,7 @@ namespace Infrastructure.Repositories
         private readonly IDatabase redisDB = redis.GetDatabase();
         private const string MatchingMapKey = "matching_map";
         private const string MatchingQueueKey = "matching_queue";
-        private const string RoomMapKey = "room_map";
+        private const string RoomPlayerMap = "room_plater_map";
 
         public async Task<bool> EnqueuePlayerAsync(string connId, string name)
         {
@@ -44,7 +44,7 @@ namespace Infrastructure.Repositories
             return await tran.ExecuteAsync();
         }
 
-        public async Task<long> GetQueueLengthAsync()
+        public async Task<long> GetMatchingQueueLengthAsync()
         {
             try
             {
@@ -95,6 +95,13 @@ namespace Infrastructure.Repositories
                 new HashEntry("status", "waiting"),
                 new HashEntry("createdAt", DateTime.UtcNow.ToString("O"))
             });
+
+            for(int i = 0; i < players.Count; i++)
+            {
+                await redisDB.HashSetAsync($"room:{RoomPlayerMap}", new HashEntry[] {
+                    new HashEntry(players[i].Name, roomId),
+                });
+            }
 
             return roomKey;
         }
