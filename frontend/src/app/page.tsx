@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 import { Zap } from 'lucide-react';
 import styles from './page.module.css';
 
@@ -13,10 +14,19 @@ interface SlapAction {
   id: string; playerName: string; emoji: string; rotate: number; x: number; y: number;
 }
 
+interface MatchResult {
+  roomId: string;
+  players: string[];
+}
+
 export default function Home() {
   const [cardsOnTable, setCardsOnTable] = useState<Card[]>([]);
   const [slaps, setSlaps] = useState<SlapAction[]>([]);
   const [isSlapped, setIsSlapped] = useState(false);
+  const [playerName, setPlayerName] = useState('You');
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const connectionRef = useRef<HubConnection | null>(null);
 
   const opponents = [
     { name: 'Foxie', pos: styles.playerTop, avatar: '🦊', emoji: '🖐️' },
@@ -57,12 +67,55 @@ export default function Home() {
   const handleMySlap = () => {
     if (isSlapped) return;
     setIsSlapped(true);
-    triggerSlap("You", "✋");
+    triggerSlap(playerName.trim() || "You", "✋");
     
     // 模擬 0.2 秒後對手也拍了 (這之後會由 SignalR 傳來)
     setTimeout(() => triggerSlap("Foxie", "🖐️"), 150);
     setTimeout(() => triggerSlap("Doggo", "✋"), 300);
   };
+
+  const handleConnect = async () => {
+    if (isConnecting) return;
+
+    try {
+      setIsConnecting(true);
+
+      let connection = connectionRef.current;
+      if (!connection) {
+        connection = new HubConnectionBuilder()
+          .withUrl('http://localhost:5000/gameHub')
+          .withAutomaticReconnect()
+          .build();
+
+        connection.on('ReceiveMatchResult', (result: MatchResult) => {
+          console.log('ReceiveMatchResult:', result);
+        });
+
+        connection.onclose(() => {
+          setIsConnected(false);
+        });
+
+        await connection.start();
+        connectionRef.current = connection;
+      }
+
+      await connection.invoke('StartMatching', playerName.trim() || 'You');
+      setIsConnected(true);
+    } catch (error) {
+      console.error('Connect/StartMatching failed:', error);
+      setIsConnected(false);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (connectionRef.current) {
+        void connectionRef.current.stop();
+      }
+    };
+  }, []);
 
   return (
     <div className={styles.gameContainer}>
@@ -118,6 +171,15 @@ export default function Home() {
       <div className={`${styles.playerSlot} ${styles.playerBottom}`}>
         <div className={styles.controls}>
           <div className="flex gap-4 mb-4">
+            <input
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              placeholder="Your name"
+              className="px-4 py-2 bg-white/10 rounded"
+            />
+            <button onClick={handleConnect} disabled={isConnecting} className="px-4 py-2 bg-white/10 rounded">
+              {isConnecting ? 'Connecting...' : isConnected ? 'Connected' : 'Connect'}
+            </button>
             <button onClick={flipCard} className="px-4 py-2 bg-white/10 rounded">Next Card</button>
             <button onClick={() => triggerSlap("Foxie", "🖐️")} className="px-4 py-2 bg-white/10 rounded text-xs">Simulate Opponent Slap</button>
           </div>
