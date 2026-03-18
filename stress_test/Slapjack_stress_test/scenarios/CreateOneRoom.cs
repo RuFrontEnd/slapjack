@@ -24,7 +24,7 @@ namespace LoadTesting.Scenarios // 建議加上命名空間
                 {
                     await connection.StartAsync();
                     await connection.InvokeAsync("StartMatching", $"User_{context.InvocationNumber}");
-                    await Task.Delay(5000); // connection time
+                    await Task.Delay(10000); // connection time
                     await connection.StopAsync();
                     return Response.Ok();
                 }

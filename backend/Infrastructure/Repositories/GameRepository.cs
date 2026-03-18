@@ -12,11 +12,79 @@ namespace Infrastructure.Repositories
     public class GameRepository(ApplicationDbContext context, IConnectionMultiplexer redis, ILogger<GameRepository> logger) : IGameRepository
     {
         private readonly IDatabase redisDB = redis.GetDatabase();
+        private const string PlayerKey = "player";
         private const string MatchingKey = "matching";
         private const string MatchingMapKey = $"{MatchingKey}:matching_map";
         private const string MatchingQueueKey = $"{MatchingKey}:matching_queue";
         private const string RoomKey = "room";
-        private const string RoomPlayerMapKey = $"{RoomKey}:room_player_map";
+
+        private static string GetPlayerRedisKey(string connId) => $"{PlayerKey}:{connId}";
+        private static string GetRoomRedisKey(string roomId) => $"{RoomKey}:{roomId}";
+
+        private static HashEntry[] BuildPlayerHashEntries(string connId, string name, string? roomId)
+            =>
+            [
+                new HashEntry("connId", connId),
+                new HashEntry("name", name),
+                new HashEntry("roomId", roomId ?? string.Empty),
+            ];
+
+        private static HashEntry[] BuildRoomHashEntries(string playersJson)
+            =>
+            [
+                new HashEntry("players", playersJson),
+                new HashEntry("status", "waiting"),
+                new HashEntry("createdAt", DateTime.UtcNow.ToString("O")),
+            ];
+
+        //public async Task<List<string>> GetPlayersAsync()
+        //{
+        //    try
+        //    {
+        //        return await redisDB.ListLengthAsync(MatchingQueueKey);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // 記錄錯誤，但回傳 0 讓程式繼續跑
+        //        logger.LogError(ex, "讀取 Redis 隊列長度時出錯");
+        //        return 0;
+        //    }
+        //}
+
+        public async Task<bool> PushPlayerAsync(string connId, string name, string? roomId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(connId) || string.IsNullOrWhiteSpace(name))
+                {
+                    logger.LogWarning("push player skipped: invalid connId or name");
+                    return false;
+                }
+
+                await redisDB.HashSetAsync(GetPlayerRedisKey(connId), BuildPlayerHashEntries(connId, name, roomId));
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "push player failed");
+                return false;
+            }
+        }
+
+        public async Task<bool> DeletePlayerAsync(string connId)
+        {
+            try
+            {
+                await redisDB.KeyDeleteAsync(GetPlayerRedisKey(connId));
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "delete player failed");
+                return false;
+            }
+        }
 
         public async Task<bool> EnqueuePlayerAsync(string connId, string name)
         {
@@ -64,21 +132,39 @@ namespace Infrastructure.Repositories
         public async Task<List<PlayerEntity>> PopMatchGroupAsync(int count)
         {
             var matchedPlayers = new List<PlayerEntity>();
+            var poppedJsonList = new List<RedisValue>();
+
             for (int i = 0; i < count; i++)
             {
                 var playerJson = await redisDB.ListLeftPopAsync(MatchingQueueKey);
 
-                if (playerJson.HasValue)
+                if (!playerJson.HasValue)
                 {
-                    var player = JsonSerializer.Deserialize<PlayerEntity>(playerJson!);
-
-                    if (player != null)
-                    {
-                        matchedPlayers.Add(player);
-
-                        await redisDB.HashDeleteAsync(MatchingMapKey, player.ConnectionId);
-                    }
+                    break;
                 }
+
+                poppedJsonList.Add(playerJson);
+
+                var player = JsonSerializer.Deserialize<PlayerEntity>(playerJson!);
+                if (player != null)
+                {
+                    matchedPlayers.Add(player);
+                }
+            }
+
+            if (matchedPlayers.Count != count)
+            {
+                for (int i = poppedJsonList.Count - 1; i >= 0; i--)
+                {
+                    await redisDB.ListLeftPushAsync(MatchingQueueKey, poppedJsonList[i]);
+                }
+
+                return new List<PlayerEntity>();
+            }
+
+            for (int i = 0; i < matchedPlayers.Count; i++)
+            {
+                await redisDB.HashDeleteAsync(MatchingMapKey, matchedPlayers[i].ConnectionId);
             }
 
             return matchedPlayers;
@@ -90,28 +176,27 @@ namespace Infrastructure.Repositories
 
             var playersJson = JsonSerializer.Serialize(players);
 
-            string roomKey = $"room:{roomId}";
+            string roomKey = GetRoomRedisKey(roomId);
 
-            await redisDB.HashSetAsync(roomKey, new HashEntry[] {
-                new HashEntry("players", playersJson),
-                new HashEntry("status", "waiting"),
-                new HashEntry("createdAt", DateTime.UtcNow.ToString("O"))
-            });
+            await redisDB.HashSetAsync(roomKey, BuildRoomHashEntries(playersJson));
 
             for (int i = 0; i < players.Count; i++)
             {
-                await redisDB.HashSetAsync(RoomPlayerMapKey, new HashEntry[] {
-                    new HashEntry(players[i].ConnectionId, roomId),
-                });
+                await redisDB.HashSetAsync(
+                    GetPlayerRedisKey(players[i].ConnectionId),
+                    BuildPlayerHashEntries(players[i].ConnectionId, players[i].Name, roomId));
             }
 
-            return roomKey;
+            return roomId;
         }
 
         public async Task<bool> DeleteRoomAsync(string connId)
         {
-            string? roomId = await redisDB.HashGetAsync(RoomPlayerMapKey, connId);
-            string roomKey = $"room:{roomId}";
+            string? roomId = await redisDB.HashGetAsync(GetPlayerRedisKey(connId), "roomId");
+
+            if (string.IsNullOrWhiteSpace(roomId)) return false;
+
+            string roomKey = GetRoomRedisKey(roomId);
 
             string? roomPlayersJson = await redisDB.HashGetAsync(roomKey, "players");
 
@@ -125,7 +210,9 @@ namespace Infrastructure.Repositories
 
             for (int i = 0; i < roomPlayers.Count; i++)
             {
-                await redisDB.HashDeleteAsync(RoomPlayerMapKey, roomPlayers[i].ConnectionId);
+                await redisDB.HashSetAsync(
+                    GetPlayerRedisKey(roomPlayers[i].ConnectionId),
+                    BuildPlayerHashEntries(roomPlayers[i].ConnectionId, roomPlayers[i].Name, string.Empty));
             }
 
             return true;

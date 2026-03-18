@@ -7,19 +7,20 @@ public class GameHub(GameService gameService, ILogger<GameHub> logger) : Hub
     //private readonly MatchmakingService _matchmaking;
     public async Task StartMatching(string playerName)
     {
+        await gameService.AddPlayerAsync(Context.ConnectionId, playerName, null);
+
         await gameService.AddPlayerToQueue(Context.ConnectionId, playerName);
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        Console.WriteLine('A');
-        // 呼叫你的 Service 把他從 Redis 隊列中踢掉，避免配對到空殼
+        Console.WriteLine($"disconnect: {Context.ConnectionId}");
+
         await gameService.RemovePlayerFromQueue(Context.ConnectionId);
 
-        // TODO: close room
-
-
         await gameService.CloseRoomAsync(Context.ConnectionId);
+
+        await gameService.RemovePlayerAsync(Context.ConnectionId);
 
         await base.OnDisconnectedAsync(exception);
     }
