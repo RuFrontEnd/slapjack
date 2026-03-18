@@ -5,11 +5,22 @@ namespace WebAPi.Hubs;
 public class GameHub(GameService gameService, ILogger<GameHub> logger) : Hub
 {
     //private readonly MatchmakingService _matchmaking;
-    public async Task StartMatching(string playerName)
+    public async Task<bool> StartMatching(string playerName)
     {
-        await gameService.AddPlayerAsync(Context.ConnectionId, playerName, null);
+        var added = await gameService.AddPlayerAsync(Context.ConnectionId, playerName, null);
+
+        if (!added)
+        {
+            await Clients.Caller.SendAsync("StartMatchingRejected", new
+            {
+                Code = "DUPLICATED_NAME",
+                Message = "Player name already exists"
+            });
+            return false;
+        }
 
         await gameService.AddPlayerToQueue(Context.ConnectionId, playerName);
+        return true;
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)

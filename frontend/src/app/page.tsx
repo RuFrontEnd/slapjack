@@ -26,6 +26,7 @@ export default function Home() {
   const [playerName, setPlayerName] = useState('You');
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
   const connectionRef = useRef<HubConnection | null>(null);
 
   const opponents = [
@@ -79,6 +80,7 @@ export default function Home() {
 
     try {
       setIsConnecting(true);
+      setConnectError(null);
 
       let connection = connectionRef.current;
       if (!connection) {
@@ -91,6 +93,11 @@ export default function Home() {
           console.log('ReceiveMatchResult:', result);
         });
 
+        connection.on('StartMatchingRejected', (result: { code: string; message: string }) => {
+          setIsConnected(false);
+          setConnectError(result?.message ?? 'Start matching rejected');
+        });
+
         connection.onclose(() => {
           setIsConnected(false);
         });
@@ -99,10 +106,17 @@ export default function Home() {
         connectionRef.current = connection;
       }
 
-      await connection.invoke('StartMatching', playerName.trim() || 'You');
+      const ok = await connection.invoke<boolean>('StartMatching', playerName.trim() || 'You');
+      if (!ok) {
+        setIsConnected(false);
+        setConnectError('Name already exists, please use another name.');
+        return;
+      }
+
       setIsConnected(true);
     } catch (error) {
       console.error('Connect/StartMatching failed:', error);
+      setConnectError('Connect/StartMatching failed');
       setIsConnected(false);
     } finally {
       setIsConnecting(false);
@@ -183,6 +197,8 @@ export default function Home() {
             <button onClick={flipCard} className="px-4 py-2 bg-white/10 rounded">Next Card</button>
             <button onClick={() => triggerSlap("Foxie", "🖐️")} className="px-4 py-2 bg-white/10 rounded text-xs">Simulate Opponent Slap</button>
           </div>
+
+          {connectError && <div className="text-red-400 text-sm mb-2">{connectError}</div>}
           
           <button 
             className={styles.slapBtn}

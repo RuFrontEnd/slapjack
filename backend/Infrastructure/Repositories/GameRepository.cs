@@ -11,6 +11,7 @@ namespace Infrastructure.Repositories
 {
     public class GameRepository(ApplicationDbContext context, IConnectionMultiplexer redis, ILogger<GameRepository> logger) : IGameRepository
     {
+        private readonly IConnectionMultiplexer redisConnection = redis;
         private readonly IDatabase redisDB = redis.GetDatabase();
         private const string PlayerKey = "player";
         private const string MatchingKey = "matching";
@@ -37,19 +38,25 @@ namespace Infrastructure.Repositories
                 new HashEntry("createdAt", DateTime.UtcNow.ToString("O")),
             ];
 
-        //public async Task<List<string>> GetPlayersAsync()
-        //{
-        //    try
-        //    {
-        //        return await redisDB.ListLengthAsync(MatchingQueueKey);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        // 記錄錯誤，但回傳 0 讓程式繼續跑
-        //        logger.LogError(ex, "讀取 Redis 隊列長度時出錯");
-        //        return 0;
-        //    }
-        //}
+        private async Task<bool> IsPlayerNameExistsAsync(string name)
+        {
+            foreach (var endpoint in redisConnection.GetEndPoints())
+            {
+                var server = redisConnection.GetServer(endpoint);
+                if (!server.IsConnected) continue;
+
+                foreach (var key in server.Keys(pattern: $"{PlayerKey}:*"))
+                {
+                    var existingName = await redisDB.HashGetAsync(key, "name");
+                    if (!existingName.IsNullOrEmpty && string.Equals(existingName.ToString(), name, StringComparison.Ordinal))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
 
         public async Task<bool> PushPlayerAsync(string connId, string name, string? roomId)
         {
@@ -61,7 +68,14 @@ namespace Infrastructure.Repositories
                     return false;
                 }
 
-                await redisDB.HashSetAsync(GetPlayerRedisKey(connId), BuildPlayerHashEntries(connId, name, roomId));
+                var normalizedName = name.Trim();
+                if (await IsPlayerNameExistsAsync(normalizedName))
+                {
+                    logger.LogInformation("push player rejected: duplicated name {PlayerName}", normalizedName);
+                    return false;
+                }
+
+                await redisDB.HashSetAsync(GetPlayerRedisKey(connId), BuildPlayerHashEntries(connId, normalizedName, roomId));
 
                 return true;
             }
